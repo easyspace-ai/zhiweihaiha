@@ -20,11 +20,12 @@ module.exports = {
         NODE_ENV: 'production',
       },
     },
-    {
-      name: 'zwhnlab-ohmyppt',
-      script: 'dist/index.js',
-      cwd: path.join("/data", 'ohmyppt'),
+     {
+      name: 'ohmyppt',
+      script: 'src/index.ts',
+      cwd: path.join(__dirname, 'services/ohmyppt'),
       interpreter: 'node',
+      interpreter_args: '--import tsx',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
@@ -32,7 +33,7 @@ module.exports = {
       max_restarts: 15,
       min_uptime: '10s',
       kill_timeout: 15_000,
-      max_memory_restart: '2G',
+      max_memory_restart: '1G',
       time: true,
       env: {
         NODE_ENV: 'production',
