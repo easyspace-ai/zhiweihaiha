@@ -1,7 +1,7 @@
 import { canAccessNavItem } from './navPermissions'
 
 /** Fallback when no menu permission matches (e.g. legacy callers). */
-export const DEFAULT_AUTH_HOME = '/osint-dashboard'
+export const DEFAULT_AUTH_HOME = '/aichat'
 
 /** Menu permissions in sidebar / role-manager order → landing path */
 export const PERMISSION_HOME_ROUTES: ReadonlyArray<{ permission: string; path: string }> = [
@@ -10,7 +10,6 @@ export const PERMISSION_HOME_ROUTES: ReadonlyArray<{ permission: string; path: s
   { permission: 'menu_dashboard', path: '/dashboard' },
   { permission: 'menu_ai_session', path: '/ai-session' },
   { permission: 'menu_aichat', path: '/aichat' },
-  { permission: 'menu_osint_dashboard', path: '/osint-dashboard' },
   { permission: 'menu_ppt', path: '/ppt' },
   { permission: 'menu_admin', path: '/admin' },
 ]

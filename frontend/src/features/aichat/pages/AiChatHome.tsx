@@ -11,11 +11,11 @@ import { IntelligenceSkillToolbar } from '@/osint/components/intelligence/Intell
 import { intelligenceSkillApi } from '@/osint/services/api'
 import type { IntelligenceSkill } from '@/osint/types'
 import type { SkillGroupLite } from '@/osint/lib/intelligenceSkillToolbar'
-import { ReportCanvasPanel } from '@/features/osint-dashboard/components/ReportCanvasPanel'
-import type { DashboardReportItem } from '@/features/osint-dashboard/types'
-import { loadReportStyle, saveReportStyle, type ReportStyle } from '@/features/osint-dashboard/lib/reportStyle'
-import { formatReportSelectLabel } from '@/features/osint-dashboard/lib/reportTitleDisplay'
-import { resolveFollowUpRoute } from '../lib/reportEditIntent'
+import { ReportCanvasPanel } from '../components/report/ReportCanvasPanel'
+import type { DashboardReportItem } from '../types/report'
+import { loadReportStyle, saveReportStyle, type ReportStyle } from '../lib/reportStyle'
+import { formatReportSelectLabel } from '../lib/reportTitleDisplay'
+import { resolveSendRoute } from '../lib/sendRoute'
 import {
   clearDismissedReportId,
   isReportContextEnabled,
@@ -26,7 +26,7 @@ import { ReportContextStrip } from '../components/composer/ReportContextStrip'
 import {
   isAutoSessionTitle,
   resolveSessionTitleFromProjected,
-} from '@/features/osint-dashboard/lib/sessionTitleSync'
+} from '../lib/sessionTitleSync'
 import { aichatPath } from '../routes'
 import { useAiChatSession } from '../hooks/useAiChatSession'
 import { useAiChatStore } from '../store/useAiChatStore'
@@ -281,29 +281,29 @@ export default function AiChatHome() {
   const handleSend = useCallback(
     async (text: string) => {
       if (!urlSessionId || isStreaming) return
-      if (/^@w6\b/i.test(text)) {
-        await sendW6Manual(text)
+      const active =
+        reports.length > 0
+          ? (reports.find((r) => r.id === activeReportId) ?? reports[reports.length - 1])
+          : undefined
+      const targets = resolveActivePreviewTargets(active, reports)
+      const contextEnabled = isReportContextEnabled(urlSessionId, active?.id, dismissedReportId)
+      const route = resolveSendRoute(text, contextEnabled, targets)
+      if ('error' in route) {
+        addToast('error', route.error)
+        return
+      }
+      if (route.kind === 'w6_manual') {
+        await sendW6Manual(route.message)
         return
       }
       const ac = beginChatRequest()
       try {
-        const active =
-          reports.length > 0
-            ? (reports.find((r) => r.id === activeReportId) ?? reports[reports.length - 1])
-            : undefined
-        const targets = resolveActivePreviewTargets(active, reports)
-        const contextEnabled = isReportContextEnabled(
-          urlSessionId,
-          active?.id,
-          dismissedReportId,
-        )
-        const route = resolveFollowUpRoute(text, contextEnabled, targets)
-        if (route.kind === 'discuss' && route.mode === 'edit_html') {
+        if (route.kind === 'edit_html') {
           await startRound(
             urlSessionId,
             {
               kind: 'discuss',
-              message: text,
+              message: route.message,
               mode: 'edit_html',
               target_resource_id: route.target_resource_id,
             },
@@ -314,7 +314,7 @@ export default function AiChatHome() {
             urlSessionId,
             {
               kind: 'discuss',
-              message: text,
+              message: route.message,
               ...(route.target_resource_id
                 ? { target_resource_id: route.target_resource_id }
                 : {}),
@@ -322,7 +322,7 @@ export default function AiChatHome() {
             ac.signal,
           )
         } else {
-          await startRound(urlSessionId, { kind: 'deepseek', message: text }, ac.signal)
+          await startRound(urlSessionId, { kind: 'deepseek', message: route.message }, ac.signal)
         }
       } catch (e) {
         if (e instanceof Error && e.name === 'AbortError') return
@@ -340,6 +340,7 @@ export default function AiChatHome() {
       dismissedReportId,
       beginChatRequest,
       endChatRequest,
+      addToast,
     ],
   )
 
@@ -542,20 +543,23 @@ export default function AiChatHome() {
                 onEnable={handleEnableReportContext}
               />
             ) : null}
-            <AiChatComposer
-              disabled={!urlSessionId || !timelineReady}
-              busy={busy}
-              isStreaming={isStreaming}
-              onStop={handleStop}
-              onSend={(t) => void handleSend(t)}
-              placeholder={
-                reports.length > 0
-                  ? reportContextEnabled
-                    ? '针对上方预览内容追问；改版式请说明具体调整；@w6 为深度调研'
-                    : '纯对话模式；@w6 开头为深度调研'
-                  : '输入追问；@w6 开头为深度调研'
-              }
-            />
+          <AiChatComposer
+            disabled={!urlSessionId || !timelineReady}
+            busy={busy}
+            isStreaming={isStreaming}
+            editHtmlAvailable={Boolean(
+              resolveActivePreviewTargets(activeReport, reports).htmlResourceId,
+            )}
+            onStop={handleStop}
+            onSend={(t) => void handleSend(t)}
+            placeholder={
+              reports.length > 0
+                ? reportContextEnabled
+                  ? '输入 @ 选择深度调研或改版式；否则基于上方预览讨论'
+                  : '输入 @ 选择能力；纯对话模式不附带报告'
+                : '输入 @w6 开始深度调研，或直接提问'
+            }
+          />
           </div>
         </div>
       </div>

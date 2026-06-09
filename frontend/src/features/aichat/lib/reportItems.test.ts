@@ -4,7 +4,7 @@ import {
   resolveSessionReports,
   type SessionReportItem,
 } from './reportItems'
-import type { DashboardReportItem } from '@/features/osint-dashboard/types'
+import type { DashboardReportItem } from '../types/report'
 
 function item(id: string, kind: DashboardReportItem['kind'] = 'html'): DashboardReportItem {
   return {

@@ -37,7 +37,6 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   kunpeng: "鲲鹏策略",
   "ai-session": "AI 会话",
   aichat: "AI 研究",
-  "osint-dashboard": "情报研究",
   ppt: "PPT Studio",
 };
 

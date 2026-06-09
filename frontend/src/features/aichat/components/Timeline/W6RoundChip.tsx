@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { StopCircle } from 'lucide-react'
-import type { W6StreamEvent } from '@/features/osint-dashboard/types'
-import { w6LogLines, w6PreviewLines } from '@/features/osint-dashboard/lib/w6MessageView'
+import type { W6StreamEvent } from '../../types/report'
+import { w6LogLines, w6PreviewLines } from '../../lib/w6MessageView'
 
 const CONN_LABEL: Record<string, string> = {
   idle: '未连接',

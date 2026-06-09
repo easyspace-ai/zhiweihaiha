@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
-import { DashboardGenerativeForm } from '@/features/osint-dashboard/components/GenerativeForm'
-import { SkillFormChip } from '@/features/osint-dashboard/components/SkillFormChip'
+import { DashboardGenerativeForm } from './GenerativeForm'
+import { SkillFormChip } from './SkillFormChip'
 import type { FormField } from '@/osint/types'
 import type { FormDraftView } from '../../engine/types'
 

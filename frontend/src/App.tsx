@@ -26,7 +26,6 @@ import { PpthtmlRouteShell } from "./features/ppthtml/PpthtmlRouteShell";
 import { PptxgenjsRouteShell } from "./features/pptxgenjs/PptxgenjsRouteShell";
 import { SlideglanceRouteShell } from "./features/slideglance/SlideglanceRouteShell";
 import { OsintSessionRouteShell } from "./features/osint/OsintSessionRouteShell";
-import { OsintDashboardRouteShell } from "./features/osint-dashboard/OsintDashboardRouteShell";
 import { AiChatRouteShell } from "./features/aichat/AiChatRouteShell";
 import { useAuth } from "./contexts/AuthContext";
 import { getOsintAccessToken, isTokenExpired } from "@/osint/auth";
@@ -42,6 +41,13 @@ import { useOsintAuthStore } from "@/osint/auth";
 function DefaultHomeRedirect() {
   const { user } = useAuth();
   return <Navigate to={resolveDefaultHomeForUser(user)} replace />;
+}
+
+/** Old bookmarks: /osint-dashboard/sessions/:id → /aichat/sessions/:id */
+function LegacyOsintDashboardRedirect() {
+  const location = useLocation();
+  const target = location.pathname.replace(/^\/osint-dashboard/, "/aichat");
+  return <Navigate to={`${target}${location.search}${location.hash}`} replace />;
 }
 
 function LoginRoute() {
@@ -221,11 +227,7 @@ function AppShell() {
                   {/* <Route path="/ai-session/*" element={<OsintSessionRouteShell />} /> */}
                   <Route
                     path="/osint-dashboard/*"
-                    element={
-                      <RequireNavPermission permission={NAV_PERMISSION_KEYS.osintDashboard}>
-                        <OsintDashboardRouteShell />
-                      </RequireNavPermission>
-                    }
+                    element={<LegacyOsintDashboardRedirect />}
                   />
                   <Route
                     path="/aichat/*"

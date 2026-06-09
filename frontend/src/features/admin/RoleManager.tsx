@@ -20,7 +20,6 @@ const ALL_PERMISSIONS = [
   { key: "menu_dashboard", label: "活动栏 · Dashboard", path: "/dashboard" },
   { key: "menu_ai_session", label: "活动栏 · AI 会话", path: "/ai-session" },
   { key: "menu_aichat", label: "活动栏 · AI 研究", path: "/aichat" },
-  { key: "menu_osint_dashboard", label: "活动栏 · 情报研究（旧版）", path: "/osint-dashboard" },
   { key: "menu_ppt", label: "活动栏 · PPT", path: "/ppt" },
   { key: "menu_admin", label: "活动栏 · 系统管理", path: "/admin" },
   { key: "user_manage", label: "管理 · 用户管理", path: "/admin?tab=users" },

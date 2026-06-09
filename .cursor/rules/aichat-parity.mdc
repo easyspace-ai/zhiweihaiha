@@ -12,10 +12,6 @@ alwaysApply: false
 
 完整文档：`docs/aichat/PARITY_MATRIX.md`、`docs/aichat/DEVELOPMENT_RULES.md`
 
-## 冻结
-
-- **禁止**修改 `frontend/src/features/osint-dashboard` 功能代码（只读作行为规格）
-
 ## 架构硬约束
 
 - SSOT：`SessionEvent[]` / `conversation_events`；禁止 localStorage messages
@@ -23,19 +19,18 @@ alwaysApply: false
 - Round 隔离；`follow_ups` 必须在 `round_sealed` 之后（INV-2）
 - 复用 `osintdashboard` adapter，禁止复制 W6 runner
 
-## 发送路由（parity）
+## 发送路由
 
-- 推荐追问芯片 → **必须** `w6_manual`（等同旧版 `sendW6Message`）
-- `@w6` 前缀 → `w6_manual`
-- 有报告 + 改版式意图 → discuss edit_html（待齐）
-- 有报告 + 普通文本 → `discuss`
-- 无报告 → `deepseek`（禁止长期占位文案）
+- 推荐追问芯片 → `w6_manual`
+- `@w6` → `w6_manual`
+- `@edit-html` → `edit_html`（需选中 HTML 预览）
+- 上下文条开 + 普通文本 → `discuss`（带 Markdown 报告）
+- 上下文条关 → `deepseek`
 
 ## 改代码前
 
-1. 查 `docs/aichat/PARITY_MATRIX.md` 对应 `OSINT-xxx`
-2. 可 import 旧版规则：`w6Message.ts`、`reportEditIntent.ts`、`reportTitleDisplay.ts`
-3. 禁止 import：`useOsintDashboardChat.ts`、`sessionMessageMerge.ts`
+1. 查 `docs/aichat/PARITY_MATRIX.md` 对应条目
+2. 共享 UI/工具在 `frontend/src/features/aichat/` 内维护
 
 ## PR 必过
 

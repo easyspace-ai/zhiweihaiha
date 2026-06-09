@@ -33,8 +33,12 @@ describe('roundProcessing', () => {
     ).toBe(false)
   })
 
-  it('uses edit_html copy for layout edit intents', () => {
-    const r = round({ kind: 'discuss', anchorText: '把 html 的背景色改成黄色', anchorKind: 'discuss' })
+  it('uses edit_html copy for @edit-html rounds', () => {
+    const r = round({
+      kind: 'discuss',
+      anchorText: '@edit-html 把背景色改成黄色',
+      anchorKind: 'discuss',
+    })
     expect(resolveRoundProcessingLabel(r)).toBe('改版式中…')
   })
 

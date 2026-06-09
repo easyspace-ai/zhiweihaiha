@@ -1,5 +1,5 @@
-import type { DashboardReportItem } from '@/features/osint-dashboard/types'
-import { extractArtifactResourceId } from '@/features/osint-dashboard/lib/osintDashboardApi'
+import type { DashboardReportItem } from '../types/report'
+import { extractArtifactResourceId } from './artifactApi'
 import { resolveReportPreviewUrl } from '../api/aichatApi'
 import type { ReportRow } from '../api/aichatApi'
 import type { ReportView } from '../engine/types'

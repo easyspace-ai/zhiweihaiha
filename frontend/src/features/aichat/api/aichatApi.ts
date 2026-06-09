@@ -1,6 +1,6 @@
 import { API_CONFIG } from '@/osint/config/api'
 import { getOsintAccessToken, handleUnauthorizedResponse } from '@/osint/auth'
-import { resolveReportPreviewUrl as resolveArtifactPreviewUrl } from '@/features/osint-dashboard/lib/osintDashboardApi'
+import { resolveReportPreviewUrl as resolveArtifactPreviewUrl } from '../lib/artifactApi'
 import type { RoundKind, SessionEvent } from '../engine/types'
 
 function apiUrl(path: string): string {
