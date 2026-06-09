@@ -21,7 +21,7 @@ module.exports = {
       },
     },
      {
-      name: 'ohmyppt',
+      name: 'zwhnlab-ohmyppt',
       script: 'src/index.ts',
       cwd: path.join(__dirname, 'services/ohmyppt'),
       interpreter: 'node',
