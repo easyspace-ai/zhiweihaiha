@@ -33,6 +33,7 @@ import { useAiChatStore } from '../store/useAiChatStore'
 import { SessionSidebar } from '../components/SessionSidebar'
 import { RoundBlock } from '../components/Timeline/RoundBlock'
 import { FormDraftBlock } from '../components/Timeline/FormDraftBlock'
+import { TimelineLoadingOverlay } from '../components/TimelineLoadingOverlay'
 import { AiChatComposer } from '../components/composer/AiChatComposer'
 import { startRound, stopRound, fetchReports, presentFormDraft, cancelFormDraft } from '../api/aichatApi'
 import { parseSkillFormFields } from '../lib/parseSkillForm'
@@ -84,7 +85,8 @@ export default function AiChatHome() {
   const timelineReady = Boolean(urlSessionId && loadedSessionId === urlSessionId && !loading)
   const activeTask = useMemo(() => resolveActiveTask(projected), [projected])
   const isStreaming = activeTask.kind != null
-  const inputLocked = busy || isStreaming
+  const inputLocked = !timelineReady || busy || isStreaming
+  const showTimelineLoading = Boolean(urlSessionId && loading)
   const reports = useMemo((): SessionReportItem[] => {
     const eventItems = eventReportsToItems(projected.reports)
     if (eventItems.length > 0) return eventItems
@@ -471,9 +473,12 @@ export default function AiChatHome() {
       <div className="border-b border-slate-200 px-4 py-3 text-sm font-medium dark:border-slate-800">
         {headerTitle}
       </div>
-      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-4">
-        {loading ? <p className="text-sm text-slate-500">加载时间线…</p> : null}
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {showTimelineLoading ? <TimelineLoadingOverlay /> : null}
+        <div
+          className={`min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-4 ${showTimelineLoading ? 'pointer-events-none select-none' : ''}`}
+        >
+        {error && !showTimelineLoading ? <p className="text-sm text-red-600">{error}</p> : null}
         {hasMore && urlSessionId ? (
           <div className="flex justify-center pb-2">
             <button
@@ -514,41 +519,44 @@ export default function AiChatHome() {
           ),
         )}
         <div ref={timelineEndRef} />
-      </div>
-      <div className="shrink-0 border-t border-zinc-200/70 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#212121]">
-        <div className="mx-auto max-w-3xl space-y-2">
-          <IntelligenceSkillToolbar
-            skillGroups={skillGroups}
-            activeGroupId={activeGroupId}
-            onActiveGroupChange={setActiveGroupId}
-            intelligenceSkills={intelligenceSkills}
-            onSkillClick={handleSkillClick}
-            disabled={inputLocked}
-          />
-          {reports.length > 0 && activeReport ? (
-            <ReportContextStrip
-              title={activeReportLabel}
-              previewKind={activeReport.kind === 'markdown' ? 'markdown' : 'html'}
-              enabled={reportContextEnabled}
+        </div>
+        <div
+          className={`shrink-0 border-t border-zinc-200/70 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#212121] ${showTimelineLoading ? 'pointer-events-none' : ''}`}
+        >
+          <div className="mx-auto max-w-3xl space-y-2">
+            <IntelligenceSkillToolbar
+              skillGroups={skillGroups}
+              activeGroupId={activeGroupId}
+              onActiveGroupChange={setActiveGroupId}
+              intelligenceSkills={intelligenceSkills}
+              onSkillClick={handleSkillClick}
               disabled={inputLocked}
-              onDismiss={handleDismissReportContext}
-              onEnable={handleEnableReportContext}
             />
-          ) : null}
-          <AiChatComposer
-            disabled={!urlSessionId}
-            busy={busy}
-            isStreaming={isStreaming}
-            onStop={handleStop}
-            onSend={(t) => void handleSend(t)}
-            placeholder={
-              reports.length > 0
-                ? reportContextEnabled
-                  ? '针对上方预览内容追问；改版式请说明具体调整；@w6 为深度调研'
-                  : '纯对话模式；@w6 开头为深度调研'
-                : '输入追问；@w6 开头为深度调研'
-            }
-          />
+            {reports.length > 0 && activeReport ? (
+              <ReportContextStrip
+                title={activeReportLabel}
+                previewKind={activeReport.kind === 'markdown' ? 'markdown' : 'html'}
+                enabled={reportContextEnabled}
+                disabled={inputLocked}
+                onDismiss={handleDismissReportContext}
+                onEnable={handleEnableReportContext}
+              />
+            ) : null}
+            <AiChatComposer
+              disabled={!urlSessionId || !timelineReady}
+              busy={busy}
+              isStreaming={isStreaming}
+              onStop={handleStop}
+              onSend={(t) => void handleSend(t)}
+              placeholder={
+                reports.length > 0
+                  ? reportContextEnabled
+                    ? '针对上方预览内容追问；改版式请说明具体调整；@w6 为深度调研'
+                    : '纯对话模式；@w6 开头为深度调研'
+                  : '输入追问；@w6 开头为深度调研'
+              }
+            />
+          </div>
         </div>
       </div>
     </div>
