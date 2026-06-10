@@ -154,7 +154,11 @@ func (b *W6Bridge) finish(sessionID, roundID string, ev w6.Event) {
 		_, _ = b.events.AppendRoundSealed(sessionID, roundID, reason)
 	}
 
-	if b.onComplete != nil {
+	stopped := ev.Type == "stopped"
+	if st != nil && isRoundUserStopped(st.Events, roundID) {
+		stopped = true
+	}
+	if !stopped && b.onComplete != nil {
 		b.onComplete(sessionID, roundID)
 	}
 	b.Unbind(sessionID)

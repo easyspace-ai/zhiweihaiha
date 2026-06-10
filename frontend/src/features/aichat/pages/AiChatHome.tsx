@@ -426,6 +426,18 @@ export default function AiChatHome() {
     : ''
   const panelStorageKey = userId ? `aichat-panels:${userId}` : undefined
 
+  const handleOpenRoundHtmlReport = useCallback(
+    (resourceId: string) => {
+      const id = resourceId.trim()
+      if (!id) return
+      setActiveReportId(id)
+      setRightCollapsed?.(false)
+      if (urlSessionId) clearDismissedReportId(urlSessionId)
+      setDismissedReportId(null)
+    },
+    [setRightCollapsed, urlSessionId],
+  )
+
   const handleDismissReportContext = useCallback(() => {
     if (!urlSessionId || !activeReport?.id) return
     setDismissedReportId(activeReport.id)
@@ -515,6 +527,7 @@ export default function AiChatHome() {
               isActive={entry.round.id === projected.activeRoundId}
               onStop={urlSessionId ? () => void stopRound(urlSessionId, entry.round.id) : undefined}
               onSelectTopic={handleGuidedTopic}
+              onOpenHtmlReport={handleOpenRoundHtmlReport}
               chipsDisabled={inputLocked}
             />
           ),

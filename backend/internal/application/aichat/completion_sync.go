@@ -15,12 +15,15 @@ func (s *Service) SyncRoundCompletion(sessionID, roundID string) {
 	if roundID == "" {
 		return
 	}
-	ws, err := s.osint.Workflow().Get(sessionID)
-	if err != nil || ws == nil {
-		return
-	}
 	st, _, err := s.events.Load(sessionID)
 	if err != nil || st == nil {
+		return
+	}
+	if isRoundUserStopped(st.Events, roundID) {
+		return
+	}
+	ws, err := s.osint.Workflow().Get(sessionID)
+	if err != nil || ws == nil {
 		return
 	}
 	hasReport, hasFollowUps := roundCompletionFlags(st.Events, roundID, ws.LastMDResourceID, ws.LastHTMLResourceID)
@@ -105,6 +108,9 @@ func (s *Service) RepairSessionCompletion(sessionID string) {
 		return
 	}
 	hasReport, _ := roundCompletionFlags(st.Events, roundID, ws.LastMDResourceID, ws.LastHTMLResourceID)
+	if isRoundUserStopped(st.Events, roundID) {
+		return
+	}
 	if !hasReport && workflowHasDraftMarkdown(ws) && !workflowRoundFinalized(ws) {
 		force := workflowCanForceFinalizeOnReload(st.Events, roundID, ws)
 		if (workflowIsTerminal(ws) || force) && (workflowIdleForSeal(ws) || force) {

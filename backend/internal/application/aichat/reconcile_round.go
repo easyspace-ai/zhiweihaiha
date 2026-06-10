@@ -45,6 +45,9 @@ func (s *Service) attemptW6RoundCompletion(sessionID, roundID string) {
 }
 
 func (s *Service) tryCompleteW6Round(sessionID, roundID string, forceOnReload bool) {
+	if isRoundUserStopped(loadEvents(s, sessionID), roundID) {
+		return
+	}
 	ctx := context.Background()
 	ws, err := s.osint.Workflow().Get(sessionID)
 	if err != nil || ws == nil {
@@ -80,6 +83,9 @@ func (s *Service) ensureW6RoundFinalized(
 	roundID string,
 	force bool,
 ) bool {
+	if isRoundUserStopped(events, roundID) {
+		return false
+	}
 	if workflowRoundFinalized(ws) {
 		return true
 	}
@@ -125,6 +131,9 @@ func roundHasFinalizeDraft(events []SessionEvent, roundID string, ws *osintdashb
 // workflowCanForceFinalizeOnReload is true on GET /timeline when draft exists but HTML was never saved.
 // Skips the live 15s idle gate — does not restart upstream W6 research.
 func workflowCanForceFinalizeOnReload(events []SessionEvent, roundID string, ws *osintdashboard.WorkflowState) bool {
+	if isRoundUserStopped(events, roundID) {
+		return false
+	}
 	if ws == nil || workflowRoundFinalized(ws) {
 		return false
 	}

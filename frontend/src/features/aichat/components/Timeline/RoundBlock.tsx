@@ -23,9 +23,10 @@ function w6LogsToStreamEvents(logs: W6PanelView['logs']): W6StreamEvent[] {
 function mapChipStatus(
   status: string | undefined,
   sealed: boolean,
-): 'idle' | 'running' | 'done' | 'error' {
+): 'idle' | 'running' | 'done' | 'error' | 'stopped' {
   if (status === 'error') return 'error'
-  if (status === 'stopped' || sealed) return 'done'
+  if (status === 'stopped') return 'stopped'
+  if (sealed) return 'done'
   if (status === 'running') return 'running'
   if (status === 'idle') return 'idle'
   if (status === 'done') return 'done'
@@ -37,12 +38,14 @@ export function RoundBlock({
   isActive,
   onStop,
   onSelectTopic,
+  onOpenHtmlReport,
   chipsDisabled = false,
 }: {
   round: RoundView
   isActive: boolean
   onStop?: () => void
   onSelectTopic?: (text: string) => void
+  onOpenHtmlReport?: (resourceId: string) => void
   chipsDisabled?: boolean
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -76,12 +79,21 @@ export function RoundBlock({
           <W6RoundChip
             status={chipStatus}
             finalizing={finalizing}
-            connection={isActive && chipStatus === 'running' ? 'open' : 'closed'}
+            connection={
+              isActive && (chipStatus === 'running' || finalizing)
+                ? 'open'
+                : chipStatus === 'running'
+                  ? 'connecting'
+                  : 'closed'
+            }
             progress={w6.progress}
             lastLine={w6.lastLine}
             events={w6Events}
             onClick={() => setDrawerOpen(true)}
             onStop={chipStatus === 'running' ? onStop : undefined}
+            htmlReportId={chipStatus === 'stopped' ? undefined : round.reportHtmlId}
+            htmlReportTitle={round.reportTitle}
+            onOpenHtmlReport={onOpenHtmlReport}
           />
           <SubAgentDrawer
             open={drawerOpen}

@@ -248,6 +248,11 @@ func (s *Service) StopW6Round(sessionID string) {
 	s.runner.Stop(sessionID)
 }
 
+// ClearW6RoundDraft drops in-memory markdown draft so stopped rounds are not finalized into HTML.
+func (s *Service) ClearW6RoundDraft(sessionID string) {
+	_ = s.workflow.ClearW6Draft(sessionID)
+}
+
 // DiscussResult is returned by Discuss / EditReportHTML chat modes.
 type DiscussResult struct {
 	Reply            string

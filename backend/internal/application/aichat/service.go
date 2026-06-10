@@ -251,11 +251,13 @@ func (s *Service) StopRound(sessionID, roundID string) error {
 		return nil
 	}
 	if isW6RoundKind(st.Events, roundID) {
-		s.osint.StopW6Round(sessionID)
 		s.idle.Stop(sessionID)
-		_, _ = s.events.AppendW6Status(sessionID, roundID, W6StatusStopped)
-		_, _ = s.events.AppendRoundSealed(sessionID, roundID, SealStopped)
 		s.bridge.Unbind(sessionID)
+		_, _ = s.events.AppendW6Log(sessionID, roundID, "stopped", "用户手动停止 W6 调研", 0)
+		_, _ = s.events.AppendW6Status(sessionID, roundID, W6StatusStopped)
+		s.osint.StopW6Round(sessionID)
+		_, _ = s.events.AppendRoundSealed(sessionID, roundID, SealStopped)
+		s.osint.ClearW6RoundDraft(sessionID)
 		return nil
 	}
 	s.cancelLLMRound(sessionID, roundID)

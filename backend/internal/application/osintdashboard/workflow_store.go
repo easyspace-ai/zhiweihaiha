@@ -60,6 +60,16 @@ func (w *WorkflowStore) SetUpstreamW6ID(sessionID, upstream string) error {
 	return w.save(sess, ws)
 }
 
+func (w *WorkflowStore) ClearW6Draft(sessionID string) error {
+	sess, ws, err := w.load(sessionID)
+	if err != nil {
+		return err
+	}
+	ws.Markdown = ""
+	ws.PreviewFile = ""
+	return w.save(sess, ws)
+}
+
 func (w *WorkflowStore) UpdateMarkdown(sessionID, md, previewFile string) error {
 	sess, ws, err := w.load(sessionID)
 	if err != nil {

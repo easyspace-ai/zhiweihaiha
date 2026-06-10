@@ -30,7 +30,8 @@ func (r *Runner) ResumeIfUpstreamIdle(ctx context.Context, sessionID string) boo
 		r.hub.Publish(sessionID, ev)
 	}
 	emit(Event{Type: "log", Message: "恢复：上游 W6 已 idle，拉取 Markdown…", Progress: 85})
-	md, err := r.fetchMarkdownWhenIdle(ctx, upstreamID, emit)
+	roundPrompt := r.state.GetTopic(sessionID)
+	md, err := r.fetchMarkdownWhenIdle(ctx, upstreamID, roundPrompt, emit)
 	if err != nil || strings.TrimSpace(md) == "" {
 		return false
 	}
@@ -38,18 +39,18 @@ func (r *Runner) ResumeIfUpstreamIdle(ctx context.Context, sessionID string) boo
 	return r.completeRound(ctx, sessionID, md, topic, "")
 }
 
-// fetchMarkdownWhenIdle performs one upstream poll assuming W6 is already terminal.
-func (r *Runner) fetchMarkdownWhenIdle(ctx context.Context, upstreamID string, emit func(Event)) (string, error) {
-	resp, err := r.client.AgentMessages(ctx, upstreamID, 50, 0)
+// fetchMarkdownWhenIdle loads full upstream history and picks round-scoped markdown.
+func (r *Runner) fetchMarkdownWhenIdle(ctx context.Context, upstreamID, roundPrompt string, emit func(Event)) (string, error) {
+	messages, err := r.fetchAllAgentMessages(ctx, upstreamID)
 	if err != nil {
 		return "", err
 	}
-	mdCandidate := r.latestMarkdownFromMessages(ctx, resp.Messages)
+	mdCandidate := r.latestMarkdownFromMessages(ctx, messages, roundPrompt)
 	if mdCandidate != "" {
 		emit(Event{Type: "log", Message: "W6 已 idle，Markdown 报告就绪"})
 		return mdCandidate, nil
 	}
-	if accText := latestUserFacingText(resp.Messages); accText != "" {
+	if accText := lastUserFacingTextInRound(messages, roundPrompt); accText != "" {
 		emit(Event{Type: "log", Message: "W6 已 idle，整理聊天文本…"})
 		return r.formatTextAsReport(accText), nil
 	}

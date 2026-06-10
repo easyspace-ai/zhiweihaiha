@@ -162,7 +162,8 @@ func (r *Runner) ResumePoll(ctx context.Context, sessionID string) bool {
 			r.hub.Publish(sessionID, ev)
 		}
 		emit(Event{Type: "log", Message: "监控：恢复 W6 轮询…", Progress: 50})
-		md, err := r.pollMarkdown(runCtx, upstreamID, emit)
+		roundPrompt := r.state.GetTopic(sessionID)
+		md, err := r.pollMarkdown(runCtx, upstreamID, roundPrompt, emit)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
@@ -274,10 +275,10 @@ func (r *Runner) runReal(ctx context.Context, sessionID, prompt string, emit fun
 	log.Printf("[osintdashboard] push ok session=%s upstream=%s ack=%s", sessionID, upstreamID, push.AckReason)
 	emit(Event{Type: "tool", Message: fmt.Sprintf("已发送调研指令 (ack=%s)", push.AckReason), Progress: 40})
 
-	return r.pollMarkdown(ctx, upstreamID, emit)
+	return r.pollMarkdown(ctx, upstreamID, prompt, emit)
 }
 
-func (r *Runner) pollMarkdown(ctx context.Context, upstreamID string, emit func(Event)) (string, error) {
+func (r *Runner) pollMarkdown(ctx context.Context, upstreamID, roundPrompt string, emit func(Event)) (string, error) {
 	var deadline time.Time
 	if r.pollWait > 0 {
 		deadline = time.Now().Add(r.pollWait)
@@ -299,15 +300,22 @@ func (r *Runner) pollMarkdown(ctx context.Context, upstreamID string, emit func(
 		if err := ctx.Err(); err != nil {
 			return "", err
 		}
-		resp, err := r.client.AgentMessages(ctx, upstreamID, 50, 0)
+		messages, err := r.fetchAllAgentMessages(ctx, upstreamID)
 		if err != nil {
 			emit(Event{Type: "log", Message: "拉取消息: " + err.Error()})
 			time.Sleep(2 * time.Second)
 			continue
 		}
-		msgCount := len(resp.Messages)
-		lastMessages = resp.Messages
-		for _, msg := range resp.Messages {
+		msgCount := len(messages)
+		lastMessages = messages
+		scopeStart := roundScopeStartIndex(messages, roundPrompt) + 1
+		if scopeStart < 0 {
+			scopeStart = 0
+		}
+		for i, msg := range messages {
+			if i < scopeStart {
+				continue
+			}
 			if strings.EqualFold(msg.Kind, "from_user") {
 				continue
 			}
@@ -318,8 +326,8 @@ func (r *Runner) pollMarkdown(ctx context.Context, upstreamID string, emit func(
 			}
 		}
 
-		roundMD := r.latestMarkdownFromMessages(ctx, resp.Messages)
-		roundText := latestUserFacingText(resp.Messages)
+		roundMD := r.latestMarkdownFromMessages(ctx, messages, roundPrompt)
+		roundText := lastUserFacingTextInRound(messages, roundPrompt)
 		stableOutput := pollOutputStable(msgCount, lastMsgCount, roundMD != "" || roundText != "", stablePolls)
 		lastMsgCount = msgCount
 		stablePolls = stableOutput.stablePolls
@@ -330,11 +338,11 @@ func (r *Runner) pollMarkdown(ctx context.Context, upstreamID string, emit func(
 			st = r.upstreamStatus(ctx, upstreamID)
 		}
 		if upstreamIsIdle(st) || stableOutput.readyWithoutProbe {
-			if roundMD := r.latestMarkdownFromMessages(ctx, resp.Messages); roundMD != "" {
+			if roundMD := r.latestMarkdownFromMessages(ctx, messages, roundPrompt); roundMD != "" {
 				emit(Event{Type: "log", Message: "W6 已 idle，Markdown 报告就绪"})
 				return roundMD, nil
 			}
-			if accText := latestUserFacingText(resp.Messages); accText != "" {
+			if accText := lastUserFacingTextInRound(messages, roundPrompt); accText != "" {
 				emit(Event{Type: "log", Message: fmt.Sprintf("W6 已 idle，整理聊天文本 (%d 字符)…", len(accText))})
 				return r.formatTextAsReport(accText), nil
 			}
@@ -347,10 +355,10 @@ func (r *Runner) pollMarkdown(ctx context.Context, upstreamID string, emit func(
 		}
 		time.Sleep(3 * time.Second)
 	}
-	if roundMD := r.latestMarkdownFromMessages(ctx, lastMessages); roundMD != "" {
+	if roundMD := r.latestMarkdownFromMessages(ctx, lastMessages, roundPrompt); roundMD != "" {
 		return roundMD, nil
 	}
-	if accText := latestUserFacingText(lastMessages); accText != "" {
+	if accText := lastUserFacingTextInRound(lastMessages, roundPrompt); accText != "" {
 		return r.formatTextAsReport(accText), nil
 	}
 	return "", fmt.Errorf("timeout waiting for W6 response")
